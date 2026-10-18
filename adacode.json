@@ -84,7 +84,13 @@
       "SCARF_NO_ANALYTICS": "true",
       "DO_NOT_TRACK": "true",
       "HF_HUB_DISABLE_SYMLINKS": "1",
-      "HF_HUB_DISABLE_SYMLINKS_WARNING": "1"
+      "HF_HUB_DISABLE_SYMLINKS_WARNING": "1",
+      "ENABLE_IMAGE_GENERATION": "True",
+      "IMAGE_GENERATION_ENGINE": "openai",
+      "IMAGES_OPENAI_API_BASE_URL": "{{gateway_adacode}}",
+      "IMAGES_OPENAI_API_KEY": "{{kunci_api_pelanggan}}",
+      "IMAGE_GENERATION_MODEL": "adaimage-2.1-flash",
+      "IMAGE_SIZE": "1024x1024"
     }
   },
   "perbarui": [
@@ -92,6 +98,16 @@
       "aksi": "shell",
       "venv": "env",
       "perintah": "uv pip install open-webui -U"
+    },
+    {
+      "aksi": "tulis",
+      "buat": "adacode_setelan.py",
+      "teks": "\"\"\"Setelan adaCODE untuk Open WebUI yang SUDAH terpasang (dijalankan saat Perbarui).\n\nOpen WebUI 0.11 menyimpan setiap setelan ke data/webui.db saat pertama jalan, dan nilai di DB\nmengalahkan variabel lingkungan. Pemasangan lama karena itu tetap \"pembuatan gambar mati\" walau\nresep kini mengarahkannya ke adaIMAGE. Skrip ini menghapus kunci image_generation.* HANYA bila\nmasih bawaan (enable=false dan model kosong), supaya terisi ulang dari env saat start berikutnya.\nSetelan yang sudah diatur pengguna sendiri TIDAK disentuh.\n\"\"\"\nimport json, os, sqlite3, sys\n\ndb = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data', 'webui.db')\nif not os.path.exists(db):\n    print('adaCODE: belum ada data Open WebUI, lewati')\n    sys.exit(0)\ncon = sqlite3.connect(db)\ntry:\n    ada = con.execute(\"SELECT name FROM sqlite_master WHERE type='table' AND name='config'\").fetchone()\n    if not ada:\n        print('adaCODE: tabel config belum ada, lewati')\n        sys.exit(0)\n    nilai = dict(con.execute(\"SELECT key, value FROM config WHERE key IN ('image_generation.enable', 'image_generation.model')\").fetchall())\n    def baca(k):\n        v = nilai.get(k)\n        try:\n            return json.loads(v) if isinstance(v, str) else v\n        except ValueError:\n            return v\n    if baca('image_generation.enable') in (False, None) and not baca('image_generation.model'):\n        n = con.execute(\"DELETE FROM config WHERE key LIKE 'image_generation.%'\").rowcount\n        con.commit()\n        print(f'adaCODE: pembuatan gambar diarahkan ke adaIMAGE ({n} setelan bawaan dikembalikan)')\n    else:\n        print('adaCODE: setelan gambar sudah diatur pengguna, tidak diubah')\nfinally:\n    con.close()\n"
+    },
+    {
+      "aksi": "shell",
+      "venv": "env",
+      "perintah": "python adacode_setelan.py"
     }
   ],
   "setel_ulang": [
@@ -114,7 +130,8 @@
     "onnxruntime_dipatok": "Versi 1.20.1 dibawa apa adanya dari manifes rujukan pinokiofactory. Alasan pematokannya tidak saya verifikasi — jangan dinaikkan tanpa menguji, karena kemungkinan besar ia menambal ketidakcocokan yang tak terlihat dari luar.",
     "venv_di_dalam_folder": "`venv: env` membuat lingkungan Python DI DALAM folder app, bukan global — syarat aturan satu-folder. Paketnya sendiri tidak menggandakan disk: `uv` menautkan keras dari cache global (diuji 19 Agu: inode identik antar-venv, tanpa perlu admin di Windows).",
     "hf_symlink": "HF_HUB_DISABLE_SYMLINKS=1 karena symlink berkas HuggingFace gagal di Windows non-admin — persis yang membuat Pinokio menyerah (kernel/shell.js:305). Tanpa ini, layar pertama dipenuhi peringatan panjang tentang symlink dan pelanggan mengira ada yang rusak. Penggandaan blob→snapshot di dalam cache tetap terjadi; itu ongkos yang diterima sadar.",
-    "gateway_diisi_server": "OPENAI_API_BASE_URL sengaja TIDAK dipatok di manifes. Kunci API diterbitkan oleh basis data server yang menyajikan manifes ini; kalau alamat gateway dipatok, keduanya bisa berasal dari lingkungan berbeda. TERBUKTI 19 Agu 2026: app diarahkan ke server dev lokal, kuncinya sah di DB lokal, lalu ditolak 401 oleh api.adacode.ai — dan yang terlihat pelanggan hanya 'No models available' tanpa sepatah pun petunjuk. Sekarang penerbit kunci dan gateway selalu sepasang (lihat gatewayAdacode() di server/utils/apps/katalog.js). Untuk menguji di dev dengan gateway lokal: set ADACODE_GATEWAY_URL=http://127.0.0.1:3009/v1."
+    "gateway_diisi_server": "OPENAI_API_BASE_URL sengaja TIDAK dipatok di manifes. Kunci API diterbitkan oleh basis data server yang menyajikan manifes ini; kalau alamat gateway dipatok, keduanya bisa berasal dari lingkungan berbeda. TERBUKTI 19 Agu 2026: app diarahkan ke server dev lokal, kuncinya sah di DB lokal, lalu ditolak 401 oleh api.adacode.ai — dan yang terlihat pelanggan hanya 'No models available' tanpa sepatah pun petunjuk. Sekarang penerbit kunci dan gateway selalu sepasang (lihat gatewayAdacode() di server/utils/apps/katalog.js). Untuk menguji di dev dengan gateway lokal: set ADACODE_GATEWAY_URL=http://127.0.0.1:3009/v1.",
+    "gambar_adacode": "Pembuatan gambar (19 Okt 2026): diarahkan ke adaIMAGE (adaimage-2.1-flash) lewat gateway adaCODE - terbukti dgn permintaan berbentuk persis Open WebUI 0.11.4 (b64_json, 1024x1024, 9,2 dtk). Embedding RAG & speech-to-text MASIH model lokal: gateway adaCODE belum punya /v1/embeddings dan /v1/audio/transcriptions."
   },
   "tag": "Robots",
   "populer": 1150,

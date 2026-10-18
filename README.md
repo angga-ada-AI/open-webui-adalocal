@@ -26,3 +26,16 @@ Aturan manifes:
 - Jangan menulis rahasia di sini. Kunci API adaCODE dan alamat gateway diisi server lewat pengisi tempat
   `{{kunci_api_pelanggan}}` dan `{{gateway_adacode}}`; jalur lokal lewat `{{folder_app}}`.
 - Semua berkas app wajib berada di foldernya sendiri (supaya bisa dipindah ke VPS).
+
+## Model AI yang dipakai
+
+| Fitur Open WebUI | Sumber | Keterangan |
+|---|---|---|
+| Chat | model adaCODE | `OPENAI_API_BASE_URL` = gateway adaCODE, kunci pelanggan diisi server |
+| Pembuatan gambar | adaIMAGE (`adaimage-2.1-flash`) | sejak 19 Okt 2026, 1024×1024 |
+| Embedding dokumen (RAG) | model lokal `sentence-transformers` | gateway adaCODE belum punya `/v1/embeddings` |
+| Suara ke teks | model lokal (Whisper) | gateway adaCODE belum punya `/v1/audio/transcriptions` |
+
+Open WebUI menyimpan setelan ke `data/webui.db` saat pertama jalan, dan nilai di sana mengalahkan variabel
+lingkungan. Untuk pemasangan lama, tombol **Perbarui** menjalankan `adacode_setelan.py`, yang mengembalikan
+setelan gambar ke adaIMAGE **hanya bila** setelan itu masih bawaan. Setelan yang diatur pengguna tidak disentuh.
