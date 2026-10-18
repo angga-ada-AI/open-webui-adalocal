@@ -1,0 +1,123 @@
+{
+  "id": "open-webui",
+  "nama": "Open WebUI",
+  "deskripsi": "Antarmuka chat untuk model AI — mirip ChatGPT, jalan di komputer sendiri, sudah tersambung ke model adaCODE.",
+  "kategori": "Chat AI",
+  "sumber": "https://github.com/open-webui/open-webui",
+  "lisensi": "BSD-3-Clause",
+  "sorot": [
+    "Model adaCODE sudah tersambung — tak ada API key yang perlu ditempel.",
+    "Riwayat chat & akun tersimpan di komputer Anda, bukan di server kami.",
+    "Unggah dokumen lalu tanyai isinya (RAG) — model embedding jalan lokal.",
+    "Bisa dipindahkan ke VPS tanpa kehilangan riwayat maupun akun."
+  ],
+  "perkiraan": {
+    "disk_mb": 2100,
+    "ram_mb": 750,
+    "catatan": "Diukur 19 Agu 2026. Sebagian besar dipakai bersama app lain lewat cache, jadi app kedua jauh lebih hemat."
+  },
+  "ikon": "open-webui.png",
+  "gambar": "gambar.jpg",
+  "versi_manifes": 1,
+  "butuh_gpu": false,
+  "bisa_pindah_vps": true,
+  "prasyarat": [
+    {
+      "alat": "uv"
+    },
+    {
+      "alat": "python",
+      "minimal": "3.11"
+    }
+  ],
+  "pasang": [
+    {
+      "aksi": "log",
+      "pesan": "Menyiapkan lingkungan Python…"
+    },
+    {
+      "aksi": "venv",
+      "buat": "env",
+      "python": "3.11"
+    },
+    {
+      "aksi": "log",
+      "pesan": "Memasang Open WebUI…"
+    },
+    {
+      "aksi": "shell",
+      "venv": "env",
+      "perintah": "uv pip install open-webui -U"
+    },
+    {
+      "aksi": "shell",
+      "venv": "env",
+      "perintah": "uv pip install onnxruntime==1.20.1 itsdangerous"
+    },
+    {
+      "aksi": "folder",
+      "buat": "data"
+    },
+    {
+      "aksi": "log",
+      "pesan": "Open WebUI terpasang."
+    }
+  ],
+  "jalan": {
+    "daemon": true,
+    "venv": "env",
+    "perintah": "open-webui serve --host 127.0.0.1 --port 42004",
+    "tanda_siap": "Started server process",
+    "url_cadangan": "http://127.0.0.1:42004",
+    "batas_tunggu_detik": 300,
+    "env": {
+      "DATA_DIR": "{{folder_app}}/data",
+      "HF_HOME": "{{cache_bersama}}/huggingface",
+      "OPENAI_API_BASE_URL": "{{gateway_adacode}}",
+      "OPENAI_API_KEY": "{{kunci_api_pelanggan}}",
+      "ENABLE_OPENAI_API": "True",
+      "ENABLE_OLLAMA_API": "False",
+      "WEBUI_AUTH": "True",
+      "WEBUI_SECRET_KEY": "{{kunci_sesi_open_webui}}",
+      "WEBUI_NAME": "adaCODE Chat",
+      "ANONYMIZED_TELEMETRY": "False",
+      "SCARF_NO_ANALYTICS": "true",
+      "DO_NOT_TRACK": "true",
+      "HF_HUB_DISABLE_SYMLINKS": "1",
+      "HF_HUB_DISABLE_SYMLINKS_WARNING": "1"
+    }
+  },
+  "perbarui": [
+    {
+      "aksi": "shell",
+      "venv": "env",
+      "perintah": "uv pip install open-webui -U"
+    }
+  ],
+  "setel_ulang": [
+    {
+      "aksi": "log",
+      "pesan": "Menghapus data Open WebUI. Riwayat chat dan akun akan HILANG."
+    },
+    {
+      "aksi": "folder",
+      "kosongkan": "data"
+    }
+  ],
+  "catatan": {
+    "kenapa_app_ini_didahulukan": "Open WebUI menerima kredensial model lewat ENV — `OPENAI_API_BASE_URL`, `OPENAI_API_KEY`, `ENABLE_OPENAI_API` (diverifikasi di backend/open_webui/config.py). n8n TIDAK bisa: node AI-nya membaca kredensial dari database n8n, jadi harus ditanam lewat REST API sesudah wizard pemiliknya selesai. Karena itu app inilah yang membuktikan janji 'model adaCODE otomatis, pelanggan tak menyetel apa pun' — n8n hanya membuktikan pemasangannya.",
+    "kenapa_ollama_dimatikan": "`ENABLE_OLLAMA_API` bawaannya True dan Open WebUI akan mencari Ollama di localhost:11434. Di mesin pelanggan yang tak punya Ollama, itu memunculkan galat sambungan berulang di layar pertama — pelanggan menyimpulkan appnya rusak padahal ia bekerja. Dimatikan supaya yang terlihat hanya model adaCODE.",
+    "kenapa_auth_TETAP_hidup_di_lokal": "Menyalakan `WEBUI_AUTH=False` menghilangkan gesekan mendaftar di mesin sendiri, tapi merusak corong: riwayat chat lokal terikat pengguna bawaan, dan menyalakan auth setelah pindah ke VPS menuntut akun yang belum pernah ada. Lebih baik satu kali mendaftar di awal daripada kehilangan seluruh riwayat saat pindah. Di VPS auth WAJIB hidup — di sana ia terbuka ke internet.",
+    "kunci_sesi": "{{kunci_sesi_open_webui}} WAJIB diturunkan dari userId dengan rumus tetap, sama pendekatannya dengan N8N_ENCRYPTION_KEY. Diverifikasi di backend/open_webui/env.py: `WEBUI_SECRET_KEY` WAJIB ada saat auth hidup, dan **tidak disimpan ke berkas**. Kalau nilainya berubah antar-peluncuran atau berbeda antara lokal dan VPS, seluruh sesi putus dan pelanggan terlempar keluar tanpa penjelasan.",
+    "hf_home": "Open WebUI mengunduh model embedding untuk RAG lewat HuggingFace. `HF_HOME` diarahkan ke cache BERSAMA supaya app lain yang memakai model sama tak mengunduh ulang — inilah tempat strategi disk itu benar-benar berlaku. Tanpa ini tiap app menyimpan salinannya sendiri.",
+    "port_dan_penangkap_url": "DIUKUR, bukan ditebak: Open WebUI mencetak `INFO: Started server process` ke stderr dan TIDAK PERNAH mencetak 'Uvicorn running on'. Versi pertama manifes ini memakai pola 'Uvicorn running on' — hasilnya app sehat tampak menggantung sampai batas waktu 300 detik habis lalu jatuh ke url_cadangan. Manifes rujukan pinokiofactory memakai pola yang benar sejak awal; saya menebak-ulang dan salah. Karena penanda itu tak memuat alamat, dipakai `tanda_siap` + `url_cadangan`, bukan `tangkap_url`.",
+    "onnxruntime_dipatok": "Versi 1.20.1 dibawa apa adanya dari manifes rujukan pinokiofactory. Alasan pematokannya tidak saya verifikasi — jangan dinaikkan tanpa menguji, karena kemungkinan besar ia menambal ketidakcocokan yang tak terlihat dari luar.",
+    "venv_di_dalam_folder": "`venv: env` membuat lingkungan Python DI DALAM folder app, bukan global — syarat aturan satu-folder. Paketnya sendiri tidak menggandakan disk: `uv` menautkan keras dari cache global (diuji 19 Agu: inode identik antar-venv, tanpa perlu admin di Windows).",
+    "hf_symlink": "HF_HUB_DISABLE_SYMLINKS=1 karena symlink berkas HuggingFace gagal di Windows non-admin — persis yang membuat Pinokio menyerah (kernel/shell.js:305). Tanpa ini, layar pertama dipenuhi peringatan panjang tentang symlink dan pelanggan mengira ada yang rusak. Penggandaan blob→snapshot di dalam cache tetap terjadi; itu ongkos yang diterima sadar.",
+    "gateway_diisi_server": "OPENAI_API_BASE_URL sengaja TIDAK dipatok di manifes. Kunci API diterbitkan oleh basis data server yang menyajikan manifes ini; kalau alamat gateway dipatok, keduanya bisa berasal dari lingkungan berbeda. TERBUKTI 19 Agu 2026: app diarahkan ke server dev lokal, kuncinya sah di DB lokal, lalu ditolak 401 oleh api.adacode.ai — dan yang terlihat pelanggan hanya 'No models available' tanpa sepatah pun petunjuk. Sekarang penerbit kunci dan gateway selalu sepasang (lihat gatewayAdacode() di server/utils/apps/katalog.js). Untuk menguji di dev dengan gateway lokal: set ADACODE_GATEWAY_URL=http://127.0.0.1:3009/v1."
+  },
+  "tag": "Robots",
+  "populer": 1150,
+  "unggulan": true,
+  "ditambahkan": "2026-08-18"
+}
